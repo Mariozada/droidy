@@ -278,32 +278,43 @@ class DroidAgent(Workflow):
         if self.config.agent.reasoning:
             # Choose between stateful and stateless manager
             if self.config.agent.manager.stateless:
-                logger.debug("📝 Initializing StatelessManager and Executor Agents...")
-                ManagerClass = StatelessManagerAgent
+                logger.debug("📝 Initializing StatelessManager Agent...")
+                self.manager_agent = StatelessManagerAgent(
+                    llm=self.manager_llm,
+                    tools_instance=None,
+                    shared_state=self.shared_state,
+                    agent_config=self.config.agent,
+                    custom_tools=self.custom_tools,
+                    atomic_tools=self.atomic_tools,
+                    output_model=self.output_model,
+                    prompt_resolver=self.prompt_resolver,
+                    tracing_config=self.config.tracing,
+                    timeout=self.timeout,
+                )
+                # No executor needed for stateless manager
+                self.executor_agent = None
             else:
                 logger.debug("📝 Initializing Manager and Executor Agents...")
-                ManagerClass = ManagerAgent
-
-            self.manager_agent = ManagerClass(
-                llm=self.manager_llm,
-                tools_instance=None,
-                shared_state=self.shared_state,
-                agent_config=self.config.agent,
-                custom_tools=self.custom_tools,
-                output_model=self.output_model,
-                prompt_resolver=self.prompt_resolver,
-                tracing_config=self.config.tracing,
-                timeout=self.timeout,
-            )
-            self.executor_agent = ExecutorAgent(
-                llm=self.executor_llm,
-                tools_instance=None,
-                shared_state=self.shared_state,
-                agent_config=self.config.agent,
-                custom_tools=self.custom_tools,
-                prompt_resolver=self.prompt_resolver,
-                timeout=self.timeout,
-            )
+                self.manager_agent = ManagerAgent(
+                    llm=self.manager_llm,
+                    tools_instance=None,
+                    shared_state=self.shared_state,
+                    agent_config=self.config.agent,
+                    custom_tools=self.custom_tools,
+                    output_model=self.output_model,
+                    prompt_resolver=self.prompt_resolver,
+                    tracing_config=self.config.tracing,
+                    timeout=self.timeout,
+                )
+                self.executor_agent = ExecutorAgent(
+                    llm=self.executor_llm,
+                    tools_instance=None,
+                    shared_state=self.shared_state,
+                    agent_config=self.config.agent,
+                    custom_tools=self.custom_tools,
+                    prompt_resolver=self.prompt_resolver,
+                    timeout=self.timeout,
+                )
         else:
             self.manager_agent = None
             self.executor_agent = None
@@ -502,10 +513,15 @@ class DroidAgent(Workflow):
             self.tools_instance.streaming = self.config.agent.streaming
 
         # Update sub-agents with tools (outside the if block - works for both auto-created and pre-provided)
-        if self.config.agent.reasoning and self.executor_agent:
+        if self.config.agent.reasoning and self.manager_agent:
             self.manager_agent.tools_instance = self.tools_instance
-            self.executor_agent.tools_instance = self.tools_instance
-            self.executor_agent.atomic_tools = self.atomic_tools
+            # For stateless manager, also update atomic_tools
+            if self.config.agent.manager.stateless:
+                self.manager_agent.atomic_tools = self.atomic_tools
+            # For regular manager with executor
+            if self.executor_agent:
+                self.executor_agent.tools_instance = self.tools_instance
+                self.executor_agent.atomic_tools = self.atomic_tools
 
         self.tools_instance._set_context(ctx)
 
@@ -566,6 +582,11 @@ class DroidAgent(Workflow):
             thought=result["thought"],
             manager_answer=result.get("manager_answer", ""),
             success=result.get("success"),
+            # Action fields for stateless manager
+            action=result.get("action"),
+            action_success=result.get("action_success"),
+            action_error=result.get("action_error", ""),
+            action_summary=result.get("action_summary", ""),
         )
         ctx.write_event_to_stream(event)
         return event
@@ -578,11 +599,13 @@ class DroidAgent(Workflow):
         | ScripterExecutorInputEvent
         | FinalizeEvent
         | TextManipulatorInputEvent
+        | ManagerInputEvent
     ):
         """
         Process Manager output and decide next step.
 
         Checks if task is complete, if ScripterAgent should run, or if Executor should take action.
+        For stateless manager, action is already executed - update state and loop back.
         """
         # Check for answer-type termination
         if ev.manager_answer.strip():
@@ -591,6 +614,41 @@ class DroidAgent(Workflow):
             self.shared_state.progress_summary = f"Answer: {ev.manager_answer}"
 
             return FinalizeEvent(success=success, reason=ev.manager_answer)
+
+        # Handle stateless manager with direct action execution
+        if self.config.agent.manager.stateless and ev.action is not None:
+            # Action already executed by stateless manager - update state
+            self.shared_state.action_history.append(ev.action)
+            self.shared_state.summary_history.append(ev.action_summary)
+            self.shared_state.action_outcomes.append(ev.action_success or False)
+            self.shared_state.error_descriptions.append(ev.action_error)
+            self.shared_state.last_action = ev.action
+            self.shared_state.last_summary = ev.action_summary
+
+            # Error escalation check
+            err_thresh = self.shared_state.err_to_manager_thresh
+            if len(self.shared_state.action_outcomes) >= err_thresh:
+                latest = self.shared_state.action_outcomes[-err_thresh:]
+                error_count = sum(1 for o in latest if not o)
+                if error_count == err_thresh:
+                    logger.warning(f"⚠️ Error escalation: {err_thresh} consecutive errors")
+                    self.shared_state.error_flag_plan = True
+                else:
+                    if self.shared_state.error_flag_plan:
+                        logger.debug("✅ Error resolved - resetting error flag")
+                    self.shared_state.error_flag_plan = False
+
+            self.shared_state.step_number += 1
+
+            # Save trajectory
+            if self.config.logging.save_trajectory != "none":
+                self.trajectory_writer.write(
+                    self.trajectory,
+                    stage=f"step_{self.shared_state.step_number}",
+                )
+
+            # Loop back to manager
+            return ManagerInputEvent()
 
         # Check for <script> tag in current_subgoal, then extract from full plan
         if "<script>" in ev.current_subgoal:

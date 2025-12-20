@@ -65,6 +65,29 @@ Recent actions taken by the executor:
 </text_manipulation>
 {% endif %}
 
+<atomic_actions>
+You must execute ONE action per turn using the <action/> tag. Available actions:
+{% for action_name, action_info in atomic_actions.items() %}
+- {{ action_name }}({{ action_info.arguments|join(', ') }}): {{ action_info.description }}
+{% endfor %}
+
+Action format examples:
+- Click element by index: <action type="click" index="5"/>
+- Long press element: <action type="long_press" index="3"/>
+- Type text (index=-1 for focused field): <action type="type" text="Hello world" index="-1"/>
+- System button (back, home, enter): <action type="system_button" button="back"/>
+- Swipe between coordinates: <action type="swipe" coordinate="[540, 1500]" coordinate2="[540, 500]" duration="1.0"/>
+- Open app by name: <action type="open_app" text="Settings"/>
+- Wait for seconds: <action type="wait" duration="2.0"/>
+</atomic_actions>
+{% if custom_tools_descriptions %}
+
+<custom_actions>
+Additional custom actions available:
+{{ custom_tools_descriptions }}
+</custom_actions>
+{% endif %}
+
 <guidelines>
 General:
 1. Use the `open_app` action whenever you want to open an app, do not use the app drawer.
@@ -75,6 +98,13 @@ General:
 6. Make sure names and titles are not cutoff. Check full names, not just what appears in truncated UI.
 7. Dates and file names must match the user query exactly.
 8. Don't do more than what the user asks for.
+
+Action Execution:
+- For any pop-up window (permission request, etc.), close it before proceeding.
+- Consider swiping to reveal additional content if needed.
+- To input text: first click the input box to activate it, then use `type` action.
+- To clear text: long press the backspace button on keyboard.
+- If you cannot change page content by swiping, try another operation.
 
 Memory Usage:
 - Store important discovered information (names, values, content found during execution)
@@ -111,7 +141,7 @@ Example: "Opened Settings app. Navigated to Battery section. Currently viewing b
 
 <plan>
 Updated plan with numbered steps, one per line.
-The first item is what the executor will do next.
+The first item is what will be executed by the action tag.
 Example:
 1. Open Gmail app
 2. Tap on the first unread message
@@ -119,7 +149,16 @@ Example:
 4. Go back to home screen
 </plan>
 
-OR (if task is complete, do NOT include <plan>):
+<action type="ACTION_TYPE" arg1="value1" arg2="value2"/>
+Execute the FIRST step of your plan. Use ONE action from the atomic_actions list.
+Examples:
+- <action type="open_app" text="Gmail"/>
+- <action type="click" index="5"/>
+- <action type="type" text="Hello" index="3"/>
+
+---
+
+OR (if task is complete, do NOT include <plan> or <action>):
 
 <answer success="true">
 Use this when the task completed successfully. Include confirmation of what was accomplished.
@@ -132,5 +171,6 @@ Use this when the task cannot be completed. Explain why it failed.
 </answer>
 
 IMPORTANT:
-- Use EITHER <plan> OR <answer>, never both. If you include both, your response will be rejected.
+- When providing a <plan>, you MUST also provide an <action/> tag to execute the first step.
+- Use EITHER (<plan> + <action>) OR <answer>, never both.
 - The <answer> tag MUST include the success attribute (success="true" or success="false").

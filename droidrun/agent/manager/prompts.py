@@ -3,6 +3,65 @@ Prompts for the ManagerAgent.
 """
 
 import re
+import xml.etree.ElementTree as ET
+import json as json_module
+
+
+def parse_action_tag(response: str) -> dict | None:
+    """
+    Extract and parse <action .../> tag from response.
+
+    Supports both self-closing <action type="click" index="5"/>
+    and full <action type="click" index="5"></action> formats.
+
+    Returns:
+        Dict with action parameters, e.g. {"action": "click", "index": 5}
+        or None if no valid action tag found.
+    """
+    start = response.find("<action")
+    if start == -1:
+        return None
+
+    # Find the end - either /> or </action>
+    self_close = response.find("/>", start)
+    full_close = response.find("</action>", start)
+
+    if self_close != -1 and (full_close == -1 or self_close < full_close):
+        end = self_close + 2
+    elif full_close != -1:
+        end = full_close + len("</action>")
+    else:
+        return None
+
+    action_str = response[start:end]
+
+    try:
+        element = ET.fromstring(action_str)
+        attrs = element.attrib
+
+        # Convert "type" to "action" for consistency with executor
+        action_dict = {"action": attrs.pop("type", "unknown")}
+
+        # Convert attribute values to appropriate types
+        for k, v in attrs.items():
+            # Handle coordinate arrays like "[540, 1500]"
+            if v.startswith("[") and v.endswith("]"):
+                try:
+                    action_dict[k] = json_module.loads(v)
+                except (json_module.JSONDecodeError, ValueError):
+                    action_dict[k] = v
+            # Handle integers (including negative)
+            elif v.lstrip("-").isdigit():
+                action_dict[k] = int(v)
+            # Handle floats
+            elif v.replace(".", "", 1).replace("-", "", 1).isdigit():
+                action_dict[k] = float(v)
+            else:
+                action_dict[k] = v
+
+        return action_dict
+    except ET.ParseError:
+        return None
 
 
 def parse_manager_response(response: str) -> dict:
@@ -95,6 +154,9 @@ def parse_manager_response(response: str) -> dict:
 
         current_subgoal = first_line.strip()
 
+    # Parse action tag (for stateless manager with direct execution)
+    action = parse_action_tag(response)
+
     return {
         "thought": thought,
         "plan": plan,
@@ -103,4 +165,5 @@ def parse_manager_response(response: str) -> dict:
         "answer": answer,
         "success": success,
         "progress_summary": progress_summary,
+        "action": action,
     }

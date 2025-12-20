@@ -45,6 +45,11 @@ class ManagerPlanEvent(Event):
     thought: str
     manager_answer: str = ""
     success: Optional[bool] = None  # True/False if complete, None if in progress
+    # Action fields for stateless manager (when action is executed directly)
+    action: Optional[Dict] = None
+    action_success: Optional[bool] = None
+    action_error: str = ""
+    action_summary: str = ""
 
 
 class ExecutorInputEvent(Event):
