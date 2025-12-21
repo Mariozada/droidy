@@ -23,6 +23,9 @@ class ManagerResponseEvent(Event):
 
     response: str
     usage: Optional[UsageResult] = None
+    # For training data capture (distillation)
+    prompt_text: str = ""
+    prompt_screenshot: Optional[bytes] = None
 
 
 class ManagerPlanDetailsEvent(Event):

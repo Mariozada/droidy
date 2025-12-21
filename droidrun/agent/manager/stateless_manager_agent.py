@@ -281,7 +281,14 @@ class StatelessManagerAgent(Workflow):
 
         output = await self._validate_and_retry(messages, output)
 
-        return ManagerResponseEvent(response=output, usage=usage)
+        event = ManagerResponseEvent(
+            response=output,
+            usage=usage,
+            prompt_text=prompt_text,
+            prompt_screenshot=screenshot if self.vision else None,
+        )
+        ctx.write_event_to_stream(event)
+        return event
 
     @step
     async def process_response(
@@ -307,7 +314,7 @@ class StatelessManagerAgent(Workflow):
         self.shared_state.current_subgoal = parsed["current_subgoal"]
         self.shared_state.manager_answer = parsed["answer"]
 
-        return ManagerPlanDetailsEvent(
+        event = ManagerPlanDetailsEvent(
             plan=parsed["plan"],
             subgoal=parsed["current_subgoal"],
             thought=parsed["thought"],
@@ -318,6 +325,8 @@ class StatelessManagerAgent(Workflow):
             full_response=output,
             action=parsed.get("action"),
         )
+        ctx.write_event_to_stream(event)
+        return event
 
     @step
     async def execute_action(
