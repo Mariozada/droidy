@@ -31,7 +31,6 @@ from droidrun.agent.utils.tracing_setup import record_langfuse_screenshot
 from droidrun.agent.utils.prompt_resolver import PromptResolver
 from droidrun.agent.utils.tools import (
     ATOMIC_ACTION_SIGNATURES,
-    build_custom_tool_descriptions,
     click,
     long_press,
     open_app,
@@ -40,6 +39,7 @@ from droidrun.agent.utils.tools import (
     type,
     wait,
 )
+from droidrun.agent.oneflows.text_manipulator import run_text_manipulation_agent
 from droidrun.config_manager.prompt_loader import PromptLoader
 
 if TYPE_CHECKING:
@@ -115,9 +115,6 @@ class StatelessManagerAgent(Workflow):
             "text_manipulation_enabled": has_text_to_modify,
             # Action execution variables
             "atomic_actions": {**self.atomic_tools, **self.custom_tools},
-            "custom_tools_descriptions": build_custom_tool_descriptions(
-                self.custom_tools
-            ),
         }
 
         custom_prompt = self.prompt_resolver.get_prompt("manager_system")
@@ -447,6 +444,39 @@ class StatelessManagerAgent(Workflow):
                     return False, "Missing 'text' parameter", "Failed: open_app requires text"
                 await open_app(text, tools=self.tools_instance)
                 return True, "", f"Opened app: {text}"
+
+            elif action_type == "text_agent":
+                task = action_dict.get("task")
+                if task is None:
+                    return False, "Missing 'task' parameter", "Failed: text_agent requires task"
+
+                current_text = self.shared_state.focused_text or ""
+                if not current_text.strip():
+                    return False, "No focused text to edit", "Failed: text_agent requires focused text field"
+
+                try:
+                    text_to_type, code_ran = await run_text_manipulation_agent(
+                        instruction=self.shared_state.instruction,
+                        current_subgoal=task,
+                        current_text=current_text,
+                        overall_plan=self.shared_state.plan,
+                        llm=self.tools_instance.text_manipulator_llm,
+                        stream=self.agent_config.streaming,
+                    )
+
+                    if text_to_type and text_to_type.strip():
+                        result = await self.tools_instance.input_text(
+                            text_to_type, clear=True
+                        )
+                        if result and ("error" in result.lower() or "failed" in result.lower()):
+                            return False, result, f"Text agent failed to input: {result}"
+                        return True, "", f"Text agent modified text: {len(text_to_type)} chars"
+                    else:
+                        return False, "Text agent returned empty result", "Failed: no text modification"
+
+                except Exception as e:
+                    logger.error(f"Text agent error: {e}", exc_info=True)
+                    return False, f"Text agent error: {str(e)}", f"Failed: text_agent error"
 
             else:
                 return False, f"Unknown action type: {action_type}", f"Failed: unknown action '{action_type}'"

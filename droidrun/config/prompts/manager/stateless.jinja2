@@ -54,39 +54,25 @@ Recent actions taken by the executor:
 {{ current_state }}
 </current_state>
 
-{% if text_manipulation_enabled %}
-<text_manipulation>
-1. Use **TEXT_TASK:** prefix in your plan when you need to modify text in the currently focused text input field
-2. TEXT_TASK is for editing, formatting, or transforming existing text content in text boxes using Python code
-3. Do not use TEXT_TASK for extracting text from messages, typing new text, or composing messages
-4. The focused text field contains editable text that you can modify
-5. Example plan item: 'TEXT_TASK: Add "Hello World" at the beginning of the text'
-6. Always use TEXT_TASK for modifying text, do not try to select the text to copy/cut/paste or adjust the text
-</text_manipulation>
-{% endif %}
-
 <atomic_actions>
 You must execute ONE action per turn using the <action/> tag. Available actions:
 {% for action_name, action_info in atomic_actions.items() %}
 - {{ action_name }}({{ action_info.arguments|join(', ') }}): {{ action_info.description }}
 {% endfor %}
+{% if text_manipulation_enabled %}
+- text_agent(task): Delegate text editing to a specialized agent. Use when you need to modify, transform, or reformat text in the currently focused input field. The agent will analyze the current text and apply the requested changes. Do NOT use for typing new text in empty text field.
+{% endif %}
 
 Action format examples:
-- Click element by index: <action type="click" index="5"/>
-- Long press element: <action type="long_press" index="3"/>
-- Type text (index=-1 for focused field): <action type="type" text="Hello world" index="-1"/>
-- System button (back, home, enter): <action type="system_button" button="back"/>
-- Swipe between coordinates: <action type="swipe" coordinate="[540, 1500]" coordinate2="[540, 500]" duration="1.0"/>
-- Open app by name: <action type="open_app" text="Settings"/>
-- Wait for seconds: <action type="wait" duration="2.0"/>
+Click element: <action type="click" index="5"/>
+Long press: <action type="long_press" index="3"/>
+Type text: <action type="type" text="Hello world" index="-1"/>
+System button: <action type="system_button" button="back"/>
+Swipe: <action type="swipe" coordinate="[540, 1500]" coordinate2="[540, 500]" duration="1.0"/>
+Open app: <action type="open_app" text="Settings"/>
+Wait: <action type="wait" duration="2.0"/>
+{% if text_manipulation_enabled %}Edit text: <action type="text_agent" task="Add greeting at the beginning"/>{% endif %}
 </atomic_actions>
-{% if custom_tools_descriptions %}
-
-<custom_actions>
-Additional custom actions available:
-{{ custom_tools_descriptions }}
-</custom_actions>
-{% endif %}
 
 <guidelines>
 General:
