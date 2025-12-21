@@ -59,6 +59,9 @@ def parse_action_tag(response: str) -> dict | None:
             else:
                 action_dict[k] = v
 
+        # Store original XML for display in action history
+        action_dict["_xml"] = action_str
+
         return action_dict
     except ET.ParseError:
         return None

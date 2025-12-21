@@ -80,6 +80,26 @@ class StatelessManagerAgent(Workflow):
         self.prompt_resolver = prompt_resolver or PromptResolver()
         self.tracing_config = tracing_config
 
+    def _format_action_as_xml(self, act: dict | str) -> str:
+        """Format action dict as XML string like <action type="click" index="5"/>."""
+        if isinstance(act, str):
+            return act
+        if not isinstance(act, dict):
+            return str(act)
+
+        # Use stored original XML if available
+        if "_xml" in act:
+            return act["_xml"]
+
+        # Fallback: reconstruct XML from dict
+        action_type = act.get("action", "unknown")
+        attrs = [f'type="{action_type}"']
+        for key, value in act.items():
+            if key in ("action", "_xml"):
+                continue
+            attrs.append(f'{key}="{value}"')
+        return f'<action {" ".join(attrs)}/>'
+
     def _build_action_history(self) -> list[dict]:
         if not self.shared_state.action_history:
             return []
@@ -87,7 +107,7 @@ class StatelessManagerAgent(Workflow):
         n = min(5, len(self.shared_state.action_history))
         return [
             {
-                "action": act,
+                "action": self._format_action_as_xml(act),
                 "summary": summ,
                 "outcome": outcome,
                 "error": err,
@@ -113,8 +133,7 @@ class StatelessManagerAgent(Workflow):
             "action_history": self._build_action_history(),
             "current_state": self.shared_state.formatted_device_state,
             "text_manipulation_enabled": has_text_to_modify,
-            # Action execution variables
-            "atomic_actions": {**self.atomic_tools, **self.custom_tools},
+            # Atomic actions are hardcoded in prompt template
         }
 
         custom_prompt = self.prompt_resolver.get_prompt("manager_system")

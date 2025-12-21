@@ -56,22 +56,33 @@ Recent actions taken by the executor:
 
 <atomic_actions>
 You must execute ONE action per turn using the <action/> tag. Available actions:
-{% for action_name, action_info in atomic_actions.items() %}
-- {{ action_name }}({{ action_info.arguments|join(', ') }}): {{ action_info.description }}
-{% endfor %}
-{% if text_manipulation_enabled %}
-- text_agent(task): Delegate text editing to a specialized agent. Use when you need to modify, transform, or reformat text in the currently focused input field. The agent will analyze the current text and apply the requested changes. Do NOT use for typing new text in empty text field.
-{% endif %}
 
-Action format examples:
-Click element: <action type="click" index="5"/>
-Long press: <action type="long_press" index="3"/>
-Type text: <action type="type" text="Hello world" index="-1"/>
-System button: <action type="system_button" button="back"/>
-Swipe: <action type="swipe" coordinate="[540, 1500]" coordinate2="[540, 500]" duration="1.0"/>
-Open app: <action type="open_app" text="Settings"/>
-Wait: <action type="wait" duration="2.0"/>
-{% if text_manipulation_enabled %}Edit text: <action type="text_agent" task="Add greeting at the beginning"/>{% endif %}
+- click(index): Click the coordinates at the specified element index center.
+  Example: <action type="click" index="5"/>
+
+- long_press(index): Long press on the element at the specified index.
+  Example: <action type="long_press" index="3"/>
+
+- type(text, index, clear): Type text into an input field. Set index to target element, or -1 for currently focused field. Set clear="true" to clear existing text first (recommended for URL bars, search fields).
+  Example: <action type="type" text="Hello world" index="5"/>
+  Example: <action type="type" text="example.com" index="3" clear="true"/>
+
+- system_button(button): Press a system button. Options: back, home, enter.
+  Example: <action type="system_button" button="back"/>
+
+- swipe(coordinate, coordinate2, duration): Swipe from one point to another. Duration is in seconds.
+  Example: <action type="swipe" coordinate="[540, 1500]" coordinate2="[540, 500]" duration="1.0"/>
+
+- open_app(text): Open an app by name.
+  Example: <action type="open_app" text="Settings"/>
+
+- wait(duration): Wait for a specified duration in seconds. Useful for waiting for animations, page loads, or other time-based operations..
+  Example: <action type="wait" duration="2.0"/>
+{% if text_manipulation_enabled %}
+
+- text_agent(task): Delegate text editing to a specialized agent. Use when you need to modify, transform, or reformat text in the currently focused input field. The agent will analyze the current text and apply the requested changes. Do NOT use for typing new text in empty text field.
+  Example: <action type="text_agent" task="Add greeting at the beginning"/>
+{% endif %}
 </atomic_actions>
 
 <guidelines>
