@@ -480,7 +480,7 @@ class ManagerAgent(Workflow):
         try:
             usage = get_usage_from_response(self.llm.class_name(), response)
         except Exception as e:
-            logger.warning(f"Could not get usage: {e}")
+            logger.debug(f"Could not get usage: {e}")
 
         # Validate and retry if needed
         output = await self._validate_and_retry(messages, output)

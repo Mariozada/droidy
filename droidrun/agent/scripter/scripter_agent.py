@@ -198,7 +198,7 @@ class ScripterAgent(Workflow):
         try:
             usage = get_usage_from_response(self.llm.class_name(), response)
         except Exception as e:
-            logger.warning(f"Could not get llm usage from response: {e}")
+            logger.debug(f"Could not get llm usage from response: {e}")
             usage = None
 
         # Add assistant response to history

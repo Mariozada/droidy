@@ -180,7 +180,7 @@ class ExecutorAgent(Workflow):
         try:
             usage = get_usage_from_response(self.llm.class_name(), response)
         except Exception as e:
-            logger.warning(f"Could not get usage: {e}")
+            logger.debug(f"Could not get usage: {e}")
 
         return ExecutorResponseEvent(response=response_text, usage=usage)
 

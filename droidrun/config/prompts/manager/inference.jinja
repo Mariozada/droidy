@@ -1,0 +1,75 @@
+Plan actions for an Android phone task.
+                                                                                                                                                    
+<user_request>
+{{ instruction }}
+</user_request>
+{% if device_date %}
+<device_date>
+{{ device_date }}
+</device_date>
+{%- endif %}
+{%- if previous_plan %}
+<previous_plan>
+{{ previous_plan }}
+</previous_plan>
+{%- endif %}
+{%- if previous_state %}
+<previous_state>
+{{ previous_state }}
+</previous_state>
+{%- endif %}
+{%- if memory %}
+<memory>
+{{ memory }}
+</memory>
+{%- endif %}
+{%- if last_thought %}
+<last_thought>
+{{ last_thought }}
+</last_thought>
+{%- endif %}
+{%- if progress_summary %}
+<progress_summary>
+{{ progress_summary }}
+</progress_summary>
+{%- endif %}
+{%- if action_history %}
+<action_history>
+{{ action_history }}
+</action_history>
+{%- endif %}
+                                                                                                                                                    
+<current_state>
+{{ current_state }}
+</current_state>
+
+<atomic_actions>
+Execute ONE action per turn using <action/>. Available actions:
+
+- click(index): Click element at index.
+- long_press(index): Long press element at index.
+- type(text, index, clear): Type text into input field. Use index=-1 for focused field. Use clear="true" to clear existing text first.
+- system_button(button): Press system button (back, home, enter).
+- swipe(coordinate, coordinate2, duration): Swipe between points. Duration in seconds.
+- open_app(text): Open app by name.
+- wait(duration): Wait for specified seconds.
+{%- if text_manipulation_enabled %}
+- text_agent(task): Delegate text editing to specialized agent. Use for modifying text in focused input field.
+  Example: <action type="text_agent" task="Add greeting at the beginning"/>
+{%- endif %}
+</atomic_actions>
+
+<guidelines>
+- Use `open_app` to open apps, not the app drawer
+- Use search when looking for specific files/entries
+- Store info in memory, not clipboard
+- Match exact file names and dates from user request
+- Don't do more than asked
+</guidelines>
+                                                                                                                                                    
+---
+                                                                                                                                                    
+Analyze state and plan next steps.
+                                                                                                                                                    
+Output: <add_memory>, <progress_summary>, <plan>, <action>
+If complete: <answer success="true|false"> instead of <plan> and <action>
