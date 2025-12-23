@@ -41,3 +41,6 @@ frontend/
 reddit_python_posts.json
 
 test/
+
+CLAUDE.md
+prompy.py
