@@ -4,6 +4,8 @@
   <img src="./static/droidrun.png"  width="full">
 </picture>
 
+> **Note:** This is a forked project from the original [DroidRun](https://github.com/droidrun/droidrun) repository, modified to run with the [baidu/ERNIE-4.5-VL-28B-A3B-Thinking](https://huggingface.co/baidu/ERNIE-4.5-VL-28B-A3B-Thinking) model. All credit for the original work goes to the DroidRun team.
+
 <div align="center">
 
 [![Docs](https://img.shields.io/badge/Docs-📕-0D9373?style=for-the-badge)](https://docs.droidrun.ai)
