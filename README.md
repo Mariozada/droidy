@@ -20,6 +20,7 @@ Built on top of the [DroidRun](https://github.com/droidrun/droidrun) framework.
 
 ## Model
 
+- **Fine-tuned Model**: [ERNIE-4.5-VL-28B-A3B-PT-MOBILE](https://huggingface.co/fremko/ERNIE-4.5-VL-28B-A3B-PT-MOBILE)
 - **Base Model**: [ERNIE-4.5-VL-28B-A3B-Thinking](https://huggingface.co/baidu/ERNIE-4.5-VL-28B-A3B-Thinking)
 - **Task**: Android device control via vision-language understanding
 - **Framework**: DroidRun agent system
