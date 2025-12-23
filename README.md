@@ -31,6 +31,18 @@ Built on top of the [DroidRun](https://github.com/droidrun/droidrun) framework.
 pip install 'droidrun[google,anthropic,openai,deepseek,ollama,dev]'
 ```
 
+## Configuration
+
+In `config.yaml`, replace the manager's `api_base` URL with your hosted model endpoint:
+
+```yaml
+llm_profiles:
+  manager:
+    provider: OpenAILike
+    model: fremko/ERNIE-4.5-VL-28B-A3B-PT-MOBILE
+    api_base: https://your-hosted-endpoint.com/v1  # Replace with your URL
+```
+
 ## Usage
 
 ```bash
