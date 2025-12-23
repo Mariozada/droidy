@@ -18,6 +18,7 @@ Built on top of the [DroidRun](https://github.com/droidrun/droidrun) framework.
 |----------|-------------|
 | [training.jinja2](https://gist.github.com/Mariozada/71647a20aa70e38cad43564fe53c2b51) | Prompt template used for data collection |
 | [training.ipynb](https://gist.github.com/Mariozada/1cd4f1f636a604f467ccd36305530e64) | Training notebook |
+| [manager-merge-distill-1k-cut-10](https://huggingface.co/datasets/fremko/manager-merge-distill-1k-cut-10) | Training dataset |
 | [android_world](https://github.com/google-research/android_world) | Environment for data collection with built-in success validation |
 
 ## Model
