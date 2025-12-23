@@ -8,6 +8,8 @@
 
 This repository contains the fine-tuning setup for [baidu/ERNIE-4.5-VL-28B-A3B-Thinking](https://huggingface.co/baidu/ERNIE-4.5-VL-28B-A3B-Thinking) to control Android devices through natural language commands.
 
+[![Demo](https://img.youtube.com/vi/94Qmho1VLCs/0.jpg)](https://www.youtube.com/watch?v=94Qmho1VLCs)
+
 Built on top of the [DroidRun](https://github.com/droidrun/droidrun) framework.
 
 ## Training Resources
