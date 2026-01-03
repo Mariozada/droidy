@@ -29,10 +29,40 @@ Built on top of the [DroidRun](https://github.com/droidrun/droidrun) framework.
 - **Task**: Android device control via vision-language understanding
 - **Framework**: DroidRun agent system
 
-## Installation
+
+
+## Hosting
 
 ```bash
-pip install 'droidrun[google,anthropic,openai,deepseek,ollama,dev]'
+uv pip install -U vllm
+uv pip install decoder
+vllm serve "fremko/ERNIE-4.5-VL-28B-A3B-PT-MOBILE" \
+    --max-model-len 32768 \
+    --port 8000 \
+    --generation-config vllm \
+    --override-generation-config '{"temperature": 0.0, "top_p": 1.0}' \
+    --dtype bfloat16 \
+    --mm-processor-kwargs '{"min_pixels": 200704, "max_pixels": 5017600}' \
+    --limit-mm-per-prompt '{"image": 1}' \
+    --trust-remote-code
+```
+
+## Installation
+
+**Requirements:** An Android emulator running or a physical Android device connected via ADB.
+
+```bash
+# Install the droidrun package with Google provider support
+uv pip install git+https://github.com/Mariozada/droidy[google]
+
+# Install Portal APK on the connected device/emulator (requires running emulator or connected device)
+droidrun setup
+
+# Install OpenAI-like LLM provider for ERNIE model compatibility
+uv pip install llama-index-llms-openai-like
+
+# Download the pre-configured config file
+wget https://raw.githubusercontent.com/Mariozada/droidy/main/config.yaml
 ```
 
 ## Configuration
@@ -47,10 +77,12 @@ llm_profiles:
     api_base: https://your-hosted-endpoint.com/v1  # Replace with your URL
 ```
 
+> **Note:** The `config.yaml` contains multiple agent profiles configured with Google GenAI and one using ERNIE. However, only two agents are actually used during execution: **manager** and **app_opener**. The manager uses our fine-tuned ERNIE model, while the app_opener currently uses Google GenAI. The app_opener can also be switched to use ERNIE - we simply didn't update it due to our late submission deadline.
+
 ## Usage
 
 ```bash
-droidrun run "your command here" --vision
+droidrun run "your command here" --config config.yaml
 ```
 
 ## Credits

@@ -109,6 +109,7 @@ llm_profiles:
     #   max_tokens: 4096
       
   #this is not used 
+  app_opener:
     provider: GoogleGenAI
     model: models/gemini-2.5-flash
     temperature: 0.0
@@ -148,7 +149,7 @@ telemetry:
 # === Tracing Settings ===
 tracing:
   # Enable tracing
-  enabled: true
+  enabled: false
   # Tracing provider: phoenix or langfuse
   provider: phoenix
   # Langfuse configuration (set as environment variables if not empty string)
