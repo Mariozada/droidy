@@ -20,6 +20,7 @@ from async_adbutils import AdbDevice, adb
 REPO = "droidrun/droidrun-portal"
 ASSET_NAME = "droidrun-portal"
 GITHUB_API_HOSTS = ["https://api.github.com", "https://ungh.cc"]
+PINNED_VERSION = "v0.4.7"  # Set to None to use latest release
 
 PORTAL_PACKAGE_NAME = "com.droidrun.portal"
 A11Y_SERVICE_NAME = (
@@ -29,23 +30,29 @@ A11Y_SERVICE_NAME = (
 
 def get_latest_release_assets(debug: bool = False):
     """
-    Fetch the latest Portal APK release assets from GitHub.
+    Fetch the Portal APK release assets from GitHub.
+
+    If PINNED_VERSION is set, fetches that specific version.
+    Otherwise fetches the latest release.
 
     Args:
         debug: Enable debug logging
 
     Returns:
-        List of asset dictionaries from the latest GitHub release
+        List of asset dictionaries from the GitHub release
 
     Raises:
         requests.HTTPError: If the GitHub API request fails
     """
     for host in GITHUB_API_HOSTS:
-        url = f"{host}/repos/{REPO}/releases/latest"
+        if PINNED_VERSION:
+            url = f"{host}/repos/{REPO}/releases/tags/{PINNED_VERSION}"
+        else:
+            url = f"{host}/repos/{REPO}/releases/latest"
         response = requests.get(url)
         if response.status_code == 200:
             if debug:
-                print(f"Using GitHub release on {host}")
+                print(f"Using GitHub release on {host}" + (f" (pinned: {PINNED_VERSION})" if PINNED_VERSION else ""))
             break
 
     response.raise_for_status()
@@ -108,7 +115,10 @@ def download_portal_apk(debug: bool = False):
     if not asset_url:
         raise Exception(f"Asset named '{ASSET_NAME}' not found in the latest release.")
 
-    console.print(f"Found Portal APK [bold]{asset_version}[/bold]")
+    if PINNED_VERSION:
+        console.print(f"Found Portal APK [bold]{asset_version}[/bold] (pinned to {PINNED_VERSION})")
+    else:
+        console.print(f"Found Portal APK [bold]{asset_version}[/bold]")
     if debug:
         console.print(f"Asset URL: {asset_url}")
 
